@@ -1,0 +1,112 @@
+{
+  "port": 8080,
+  "auth": {
+    "users": [
+      {
+        "username": "admin",
+        "passwordHash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+        "roles": [
+          "R_SUPER",
+          "R_ADMIN",
+          "R_USER"
+        ],
+        "email": "admin@router.local"
+      }
+    ],
+    "tokenExpiry": 86400
+  },
+  "notify": {
+    "channels": []
+  },
+  "network": {
+    "uplink": "usb0",
+    "lanIfaces": [
+      "eth0",
+      "br-lan",
+      "lo"
+    ]
+  },
+  "alerts": {
+    "temperature": {
+      "critical": 85,
+      "warning": 70
+    },
+    "cpu": {
+      "critical": 95,
+      "warning": 80
+    },
+    "memory": {
+      "critical": 95,
+      "warning": 80
+    }
+  },
+  "collectors": {
+    "system": {
+      "interval": 2000
+    },
+    "network": {
+      "interval": 2000
+    },
+    "conntrack": {
+      "interval": 5000
+    },
+    "temperature": {
+      "interval": 5000
+    },
+    "dhcp": {
+      "interval": 30000
+    }
+  },
+  "capture": {
+    "enabled": true,
+    "deviceRules": {
+      "mode": "all",
+      "whitelist": [],
+      "blacklist": []
+    },
+    "typeRules": {
+      "HTTP": {
+        "enabled": true,
+        "description": "HTTP 明文请求/响应"
+      },
+      "DNS": {
+        "enabled": true,
+        "description": "DNS 查询/响应"
+      },
+      "TLS": {
+        "enabled": true,
+        "description": "TLS/HTTPS 加密握手元数据"
+      },
+      "Plaintext": {
+        "enabled": true,
+        "description": "TCP/UDP 明文报文"
+      },
+      "Telnet": {
+        "enabled": true,
+        "description": "Telnet 明文会话"
+      },
+      "FTP": {
+        "enabled": true,
+        "description": "FTP 明文传输"
+      },
+      "SMTP": {
+        "enabled": true,
+        "description": "SMTP 邮件协议"
+      }
+    },
+    "sizeFilter": {
+      "minSize": 0,
+      "maxSize": 0
+    },
+    "retention": {
+      "HTTP": 24,
+      "DNS": 48,
+      "TLS": 168,
+      "Plaintext": 72,
+      "Telnet": 168,
+      "FTP": 168,
+      "SMTP": 168,
+      "_default": 48
+    }
+  }
+}
