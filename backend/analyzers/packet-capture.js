@@ -99,7 +99,7 @@ export class PacketCapture {
         return
       }
       this.#snaplen = this.#read32(16)
-      this.#buffer = this.#buffer.subarray(24)
+      this.#buffer = Buffer.from(this.#buffer.subarray(24)) // copy to release original
       this.#headerParsed = true
     }
 
@@ -119,6 +119,12 @@ export class PacketCapture {
       } catch {
         this.#stats.errors++
       }
+    }
+
+    // Compact buffer when view offset is large (releases old large allocation)
+    // Only compact when byteOffset > 64KB to avoid excessive copying
+    if (this.#buffer.byteOffset > 65536) {
+      this.#buffer = Buffer.from(this.#buffer)
     }
   }
 

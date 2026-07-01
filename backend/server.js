@@ -101,17 +101,14 @@ let contentBroadcastTimer = setInterval(() => {
   }
 }, 2000)
 
+// Packet capture — full with broadcast
 packetCapture.start((record) => {
-  // Apply capture config filters
   if (!captureConfig.shouldCaptureIp(record.srcIp)) return
   if (!captureConfig.shouldSaveType(record.contentType)) return
   if (!captureConfig.shouldCaptureSize(record.payloadLen)) return
 
-  // Build summary once and reuse
-  const summary = buildContentSummary(record)
-
-  // Persist to database
   try {
+    const summary = buildContentSummary(record)
     const detail = JSON.stringify(record.content)
     const rawHex = record.content?.raw || null
     storage.saveContentRecord(
@@ -119,8 +116,9 @@ packetCapture.start((record) => {
       record.srcPort, record.dstPort, record.contentType,
       record.encrypted, summary, detail, rawHex, record.payloadLen
     )
-  } catch { /* ignore DB errors */ }
-  // Queue for batched broadcast
+  } catch { /* ignore */ }
+
+  // Broadcast
   contentBroadcastBatch.push({
     ts: record.ts, protocol: record.protocol,
     srcIp: record.srcIp, dstIp: record.dstIp,
@@ -128,7 +126,6 @@ packetCapture.start((record) => {
     contentType: record.contentType, encrypted: record.encrypted,
     summary, payloadLen: record.payloadLen,
   })
-  // Cap batch size to prevent memory bloat
   if (contentBroadcastBatch.length > 200) contentBroadcastBatch.splice(0, 100)
 }, { iface: 'br-lan', filter: 'not port 8080' })
 
@@ -162,6 +159,12 @@ anomalyDetector.start(
     return stats
   }
 )
+
+// Memory monitor — log every minute
+setInterval(() => {
+  const mem = process.memoryUsage()
+  console.log(`[MEM] rss=${Math.round(mem.rss/1048576)}MB heap=${Math.round(mem.heapUsed/1048576)}MB ext=${Math.round(mem.external/1048576)}MB wsClients=${wsClients.size}`)
+}, 60000).unref?.()
 
 // Periodic database cleanup — trim old records every 30 min
 setInterval(() => {
