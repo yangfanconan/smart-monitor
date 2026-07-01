@@ -28,6 +28,7 @@ A full-stack intelligent network monitoring system designed for OpenWrt/Immortal
 ### Analytics
 - **User Behavior** — Per-device traffic profiling, app/destination classification
 - **Access Records** — Historical connection logs with resolved domain names
+- **Device Activity** — Online/offline timeline with per-session app breakdown
 - **Global Traffic Map** — Dark-themed world map showing traffic flows by country
 - **Network Topology** — Force-directed graph of router → devices → external services
 
@@ -35,7 +36,7 @@ A full-stack intelligent network monitoring system designed for OpenWrt/Immortal
 - **API Authentication** — Token-based auth with refresh, WebSocket authentication
 - **Process Watchdog** — procd respawn + cron health-check with auto-restart
 - **Dashboard Customization** — Toggle and reorder widgets, persisted to localStorage
-- **Data Management** — Configurable retention policies, manual cleanup, SQLite VACUUM
+- **Data Management** — Configurable retention policies, periodic cleanup, SQLite VACUUM, memory leak prevention
 
 ## Screenshots
 
@@ -221,6 +222,7 @@ Smart Monitor 是一个为 OpenWrt/ImmortalWrt 路由器设计的全栈智能网
 ### 数据分析
 - **用户行为** — 按设备流量画像，应用/目的地分类
 - **访问记录** — 历史连接日志，含域名解析
+- **设备活动** — 在线时间线 + 每个时段访问的应用
 - **全球流量地图** — 深色主题世界地图，按国家展示流量
 - **网络拓扑** — 力导向图：路由器 → 设备 → 外部服务
 
