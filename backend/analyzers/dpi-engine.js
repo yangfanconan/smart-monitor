@@ -237,9 +237,19 @@ export class DpiEngine {
         else if (dport === 1900) appProtocol = 'SSDP/UPnP'
         else if (dport === 5683) appProtocol = 'CoAP'
         else if (dport === 1883) appProtocol = 'MQTT'
-        else if (dport >= 1024) appProtocol = `Port-${dport}`
+        else if (dport >= 1024) appProtocol = 'Other'
 
         this.#protocolStats[appProtocol] = (this.#protocolStats[appProtocol] || 0) + 1
+
+        // Periodic cleanup: cap at 50 entries, remove lowest counts
+        if (this._cleanupCounter === undefined) this._cleanupCounter = 0
+        if (++this._cleanupCounter % 500 === 0) {
+          const entries = Object.entries(this.#protocolStats)
+          if (entries.length > 50) {
+            entries.sort((a, b) => b[1] - a[1])
+            this.#protocolStats = Object.fromEntries(entries.slice(0, 50))
+          }
+        }
       }
 
       this.#onUpdate?.(this.getStats())

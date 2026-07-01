@@ -110,6 +110,22 @@ export class IpResolver {
     for (const [ip, name] of Object.entries(WELL_KNOWN_IPS)) {
       this.#cache.set(ip, { name, ts: Date.now(), source: 'well-known' })
     }
+    // Periodic cache eviction — remove expired entries every 10 min
+    setInterval(() => {
+      const now = Date.now()
+      for (const [ip, entry] of this.#cache) {
+        if (now - entry.ts > this.#cacheTTL && entry.source !== 'well-known') {
+          this.#cache.delete(ip)
+        }
+      }
+      // Hard cap: if still too large, remove oldest
+      if (this.#cache.size > 2000) {
+        const entries = [...this.#cache.entries()].sort((a, b) => a[1].ts - b[1].ts)
+        for (let i = 0; i < entries.length - 1500; i++) {
+          if (entries[i][1].source !== 'well-known') this.#cache.delete(entries[i][0])
+        }
+      }
+    }, 600000).unref?.()
   }
 
   // Resolve IP to name

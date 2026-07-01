@@ -80,6 +80,8 @@ export const monitorApi = {
   getConnections: () => get('/network/connections'),
   getDevices: () => get('/network/devices'),
   getTopology: () => get('/topology'),
+  getDeviceActivityDevices: () => get('/device-activity/devices'),
+  getDeviceActivityTimeline: (ip: string, hours = 24) => get(`/device-activity/timeline?ip=${ip}&hours=${hours}`),
   getProtocolStats: () => get('/analysis/protocols'),
   getDnsQueries: () => get('/analysis/dns'),
   getTopDomains: () => get('/analysis/top-domains'),

@@ -19,6 +19,7 @@ import { IpResolver } from './analyzers/ip-resolver.js'
 import { IpIntelligence } from './analyzers/ip-intelligence.js'
 import { anomalyDetector } from './analyzers/anomaly-detector.js'
 import { baselineManager } from './analyzers/baseline.js'
+import { deviceActivity } from './analyzers/device-activity.js'
 import { notifier } from './alerts/notifier.js'
 import { storage } from './storage/db.js'
 import { userStore } from './storage/user-store.js'
@@ -159,6 +160,31 @@ anomalyDetector.start(
     return stats
   }
 )
+
+// Periodic database cleanup — trim old records every 30 min
+setInterval(() => {
+  try {
+    const cutoff24h = Date.now() - 86400000
+    const cutoff7d = Date.now() - 7 * 86400000
+    // content_records: keep 24h
+    const cr = storage.db.prepare('DELETE FROM content_records WHERE ts < ?').run(cutoff24h)
+    // dpi_protocols: keep 24h
+    const dp = storage.db.prepare('DELETE FROM dpi_protocols WHERE ts < ?').run(cutoff24h)
+    // device_destinations: keep 7d
+    const dd = storage.db.prepare('DELETE FROM device_destinations WHERE ts < ?').run(cutoff7d)
+    // device_traffic: keep 7d
+    const dt = storage.db.prepare('DELETE FROM device_traffic WHERE ts < ?').run(cutoff7d)
+    // network_metrics: keep 7d
+    const nm = storage.db.prepare('DELETE FROM network_metrics WHERE ts < ?').run(cutoff7d)
+    // connection_snapshots: keep 24h
+    const cs = storage.db.prepare('DELETE FROM connection_snapshots WHERE ts < ?').run(cutoff24h)
+    // system_metrics: keep 7d
+    const sm = storage.db.prepare('DELETE FROM system_metrics WHERE ts < ?').run(cutoff7d)
+    console.log(`DB cleanup: content_records -${cr.changes}, dpi_protocols -${dp.changes}, device_destinations -${dd.changes}, device_traffic -${dt.changes}`)
+  } catch (e) {
+    console.warn('DB cleanup error:', e.message)
+  }
+}, 1800000).unref?.()
 
 function buildContentSummary(record) {
   const c = record.content
@@ -603,7 +629,8 @@ async function handleApi(method, pathname, params, body, user) {
           { path: 'access-records', name: 'MonitorAccessRecords', component: '/monitor/access-records/index', meta: { title: '访问记录', icon: 'ri:history-line', keepAlive: true } },
           { path: 'security', name: 'MonitorSecurity', component: '/monitor/security/index', meta: { title: '安全中心', icon: 'ri:shield-check-line', keepAlive: true } },
           { path: 'alerts', name: 'MonitorAlerts', component: '/monitor/alerts/index', meta: { title: '告警中心', icon: 'ri:alert-line', keepAlive: true } },
-          { path: 'topology', name: 'MonitorTopology', component: '/monitor/topology/index', meta: { title: '网络拓扑', icon: 'ri:node-tree', keepAlive: true } }
+          { path: 'topology', name: 'MonitorTopology', component: '/monitor/topology/index', meta: { title: '网络拓扑', icon: 'ri:node-tree', keepAlive: true } },
+          { path: 'device-activity', name: 'MonitorDeviceActivity', component: '/monitor/device-activity/index', meta: { title: '设备活动', icon: 'ri:device-line', keepAlive: true } }
         ]
       },
       {
@@ -656,6 +683,23 @@ async function handleApi(method, pathname, params, body, user) {
     const ip = params.get('ip')
     if (!ip) return { code: 400, msg: 'Missing ip', data: null }
     return ok(baselineManager.getDeviceSummary(ip))
+  }
+
+  // === Device Activity ===
+  if (pathname === '/api/device-activity/devices' && method === 'GET') {
+    return ok(deviceActivity.getDevices())
+  }
+  if (pathname === '/api/device-activity/timeline' && method === 'GET') {
+    const ip = params.get('ip')
+    const hours = parseInt(params.get('hours') || '24', 10)
+    if (!ip) return { code: 400, msg: 'Missing ip', data: null }
+    return ok(deviceActivity.getTimeline(ip, hours))
+  }
+  if (pathname === '/api/device-activity/apps' && method === 'GET') {
+    const ip = params.get('ip')
+    const hours = parseInt(params.get('hours') || '24', 10)
+    if (!ip) return { code: 400, msg: 'Missing ip', data: null }
+    return ok(deviceActivity.getApps(ip, Date.now() - hours * 3600000, Date.now()))
   }
 
   // === Monitor APIs ===

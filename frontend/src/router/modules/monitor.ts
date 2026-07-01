@@ -93,6 +93,12 @@ export const monitorRoutes: AppRouteRecord = {
       name: 'MonitorTopology',
       component: '/monitor/topology/index',
       meta: { title: '网络拓扑', icon: 'ri:node-tree', keepAlive: true }
+    },
+    {
+      path: 'device-activity',
+      name: 'MonitorDeviceActivity',
+      component: '/monitor/device-activity/index',
+      meta: { title: '设备活动', icon: 'ri:device-line', keepAlive: true }
     }
   ]
 }

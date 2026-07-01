@@ -19,6 +19,22 @@ export class ThreatDetector {
   constructor() {
     // Learning phase: don't alert for first 2 minutes
     this.#initTimer = setTimeout(() => { this.#initPhase = false }, 120000)
+    // Periodic cleanup of trackers and cooldowns — every 10 min
+    setInterval(() => {
+      const now = Date.now()
+      // Clean portScanTracker: remove entries with expired windows
+      for (const [ip, tracker] of this.#portScanTracker) {
+        if (now - tracker.firstSeen > 600000) this.#portScanTracker.delete(ip)
+      }
+      // Clean connectionRateTracker: remove stale entries
+      for (const [key, tracker] of this.#connectionRateTracker) {
+        if (now - tracker.firstSeen > 600000) this.#connectionRateTracker.delete(key)
+      }
+      // Clean cooldowns: remove expired
+      for (const [key, expiry] of this.#cooldowns) {
+        if (now > expiry) this.#cooldowns.delete(key)
+      }
+    }, 600000).unref?.()
   }
 
   analyze(connections) {

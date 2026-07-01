@@ -10,6 +10,13 @@ export class AlertManager {
   constructor(config = {}) {
     this.#config = config
     this.#loadFromDb()
+    // Clean expired cooldowns every 10 min
+    setInterval(() => {
+      const now = Date.now()
+      for (const [key, expiry] of this.#cooldowns) {
+        if (now > expiry) this.#cooldowns.delete(key)
+      }
+    }, 600000).unref?.()
   }
 
   #loadFromDb() {
