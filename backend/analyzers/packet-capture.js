@@ -169,6 +169,8 @@ export class PacketCapture {
     const streamKey = `${srcIp}:${srcPort}->${dstIp}:${dstPort}`
     let stream = this.#tcpStreams.get(streamKey)
     if (!stream) {
+      // Hard cap: if too many streams, skip new ones
+      if (this.#tcpStreams.size > 5000) return
       stream = { buf: Buffer.alloc(0), ts: Date.now(), classified: false }
       this.#tcpStreams.set(streamKey, stream)
     }

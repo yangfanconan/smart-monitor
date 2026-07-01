@@ -107,9 +107,11 @@ packetCapture.start((record) => {
   if (!captureConfig.shouldSaveType(record.contentType)) return
   if (!captureConfig.shouldCaptureSize(record.payloadLen)) return
 
+  // Build summary once and reuse
+  const summary = buildContentSummary(record)
+
   // Persist to database
   try {
-    const summary = buildContentSummary(record)
     const detail = JSON.stringify(record.content)
     const rawHex = record.content?.raw || null
     storage.saveContentRecord(
@@ -124,7 +126,7 @@ packetCapture.start((record) => {
     srcIp: record.srcIp, dstIp: record.dstIp,
     srcPort: record.srcPort, dstPort: record.dstPort,
     contentType: record.contentType, encrypted: record.encrypted,
-    summary: buildContentSummary(record), payloadLen: record.payloadLen,
+    summary, payloadLen: record.payloadLen,
   })
   // Cap batch size to prevent memory bloat
   if (contentBroadcastBatch.length > 200) contentBroadcastBatch.splice(0, 100)
@@ -364,8 +366,18 @@ const server = http.createServer(async (req, res) => {
     // Read body for POST/PUT
     if (req.method === 'POST' || req.method === 'PUT') {
       let body = ''
-      req.on('data', chunk => body += chunk)
+      let bodyTooLarge = false
+      req.on('data', chunk => {
+        body += chunk
+        if (body.length > 10 * 1024 * 1024) { // 10MB limit
+          bodyTooLarge = true
+          res.writeHead(413)
+          res.end(JSON.stringify({ code: 413, msg: 'Request body too large', data: null }))
+          req.destroy()
+        }
+      })
       req.on('end', async () => {
+        if (bodyTooLarge) return
         try {
           const parsed = body ? JSON.parse(body) : {}
 
